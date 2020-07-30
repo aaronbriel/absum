@@ -25,7 +25,7 @@ class AbSumAugmentor(object):
     Uses Abstract Summarization for Data Augmentation to address multi-label class imbalance.
     Parameters:
         df (:class:`pandas.Dataframe`): Dataframe containing text and one-hot encoded features.
-        text (:obj:`string`, `optional`, defaults to "text"): Column in df containing text.
+        text_column (:obj:`string`, `optional`, defaults to "text"): Column in df containing text.
         features (:obj:`list`, `optional`, defaults to None): Features to possibly augment data for.
         device (:class:`torch.device`, `optional`, defaults to 'cuda' if available otherwise 'cpu'):
             Torch device to run on cuda if available otherwise cpu.
@@ -61,7 +61,7 @@ class AbSumAugmentor(object):
     def __init__(
             self,
             df,
-            text='text',
+            text_column='text',
             features=None,
             device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'),
             model=T5ForConditionalGeneration.from_pretrained('t5-small'),
@@ -79,7 +79,7 @@ class AbSumAugmentor(object):
             debug=True
     ):
         self.df = df
-        self.text = text
+        self.text_column = text_column
         self.features = features
         self.device = device
         self.model = model
@@ -104,7 +104,7 @@ class AbSumAugmentor(object):
             self.features = self.features.split(",")
         else:
             self.features = self.df.columns.tolist()
-            self.features.remove(self.text)
+            self.features.remove(self.text_column)
 
     def get_abstract_summary(self, text):
         """
@@ -163,7 +163,7 @@ class AbSumAugmentor(object):
             self.df_append[feature] = 0
 
         for feature in self.features:
-            num_to_append = 3#counts[feature]
+            num_to_append = counts[feature]
             for num in range(self.append_index, self.append_index + num_to_append):
                 if self.multiproc:
                     tasks.append(self.process_abstract_summary(feature, num))
@@ -243,9 +243,9 @@ def run_cpu_tasks_in_parallel(tasks):
 
 def main():
     # Sample usage
-    csv = 'path_to_sample_csv'
+    csv = 'path_to_csv'
     df = pd.read_csv(csv)
-    augmentor = AbSumAugmentor(df, text='text')
+    augmentor = AbSumAugmentor(df, text_column='text')
     df_augmented = augmentor.abs_sum_augment()
     df_augmented.to_csv(csv.replace('.csv', '-augmented.csv'), encoding='utf-8', index=False)
 
