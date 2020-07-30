@@ -17,7 +17,7 @@ class AbSumAugmentor(object):
         self.tokenizer = T5Tokenizer.from_pretrained(args.model)
         self.df_append = None
 
-    def get_abstract_summary(self, text, debug=False):
+    def get_abstract_summary(self, text):
         """
         Computes abstract summarization of specified text
         :param text: Text to summarize
@@ -25,7 +25,7 @@ class AbSumAugmentor(object):
         :return: Abstracted summary text
         """
         t5_prepared_text = "summarize: " + text
-        if debug:
+        if self.args.debug:
             print("original text preprocessed: \n", text)
 
         if self.device.type == 'cpu':
@@ -47,7 +47,7 @@ class AbSumAugmentor(object):
         output = self.tokenizer.decode(summary_ids[0],
                                        skip_special_tokens=self.args.skip_special_tokens)
 
-        if debug:
+        if self.args.debug:
             print("\n\nSummarized text: \n", output)
 
         return output
@@ -145,7 +145,7 @@ def main():
         default='./data/google_pp_category.csv',
         type=str,
         required=True,
-        help="CSV containing data to augment",
+        help="CSV containing data to augment.",
     )
 
     parser.add_argument(
@@ -153,7 +153,7 @@ def main():
         default=None,
         type=str,
         required=False,
-        help="Name of CSV to be saved, containing augmented data",
+        help="Name of CSV to be saved, containing augmented data.",
     )
 
     parser.add_argument(
@@ -161,7 +161,7 @@ def main():
         default='text',
         type=str,
         required=False,
-        help="Column containing text",
+        help="Column containing text.",
     )
 
     parser.add_argument(
@@ -169,7 +169,7 @@ def main():
         default=None,
         type=str,
         required=False,
-        help="Comma separated string of features",
+        help="Comma separated string of features.",
     )
 
     parser.add_argument(
@@ -186,6 +186,14 @@ def main():
         type=bool,
         required=False,
         help="Whether to run abstract summarizations in multiprocessing mode to vasly reduce runtime.",
+    )
+
+    parser.add_argument(
+        "--debug",
+        default=False,
+        type=bool,
+        required=False,
+        help="Whether to execute print statements to review concatenated and summary text.",
     )
 
     parser.add_argument(
