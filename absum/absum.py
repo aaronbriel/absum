@@ -1,6 +1,7 @@
 import argparse
 
 from box import Box
+from multiprocessing import Process
 import numpy as np
 import pandas as pd
 import torch
@@ -14,6 +15,7 @@ class AbSumAugmentor(object):
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         self.model = T5ForConditionalGeneration.from_pretrained(args.model)
         self.tokenizer = T5Tokenizer.from_pretrained(args.model)
+        self.df_append = None
 
     def get_abstract_summary(self, text, debug=False):
         """
@@ -50,7 +52,7 @@ class AbSumAugmentor(object):
 
         return output
 
-    def abs_sum_augment(self, df, num_samples=100):
+    def abs_sum_augment(self, df, num_samples=100, multiproc=True):
         """
         Gets append counts (number of rows to append) for each feature then samples a
         subset of rows from main dataframe where that feature is exclusive. The subset is
@@ -59,33 +61,42 @@ class AbSumAugmentor(object):
         to essentially oversample underrepresented data.
         :param df: Main dataframe
         :param num_samples: Number of samples to pull
+        :param multiproc: Whether to run in multiprocessing mode to greatly reduce runtime
         :return: Dataframe appended with augmented samples to make underrepresented
         features match the count of the majority features.
         """
-        import time
-        t1 = time.process_time()
         counts = self.get_append_counts(df)
         # Create append dataframe with length of all rows to be appended
-        df_append = pd.DataFrame(index=np.arange(sum(counts.values())), columns=df.columns)
+        self.df_append = pd.DataFrame(index=np.arange(sum(counts.values())), columns=df.columns)
+
+        # Creating array of tasks for multiprocessing
+        tasks = []
 
         # set all feature values to 0
         for feature in self.features:
-            df_append[feature] = 0
+            self.df_append[feature] = 0
 
         for feature in self.features:
             num_to_append = counts[feature]
             # Pulling rows where only specified feature is set to 1
             df_feature = df[(df[feature] == 1) & (df[self.args.features].sum(axis=1) == 1)]
             for num in range(0, num_to_append):
-                df_sample = df_feature.sample(num_samples, replace=True)
-                text_to_summarize = ' '.join(df_sample[:num_samples]['review_text'])
-                new_review = self.get_abstract_summary(text_to_summarize)
-                df_append.at[num, 'review_text'] = new_review
-                df_append.at[num, feature] = 1
+                if multiproc:
+                    tasks.append(self.process_abstract_summary(df_feature, feature, num, num_samples))
+                else:
+                    self.process_abstract_summary(df_feature, feature, num, num_samples)
 
-                print("run_time: ", (time.process_time() - t1))
+        if multiproc:
+            run_cpu_tasks_in_parallel(tasks)
 
-        return df.append(df_append)
+        return df.append(self.df_append)
+
+    def process_abstract_summary(self, df_feature, feature, num, num_samples):
+        df_sample = df_feature.sample(num_samples, replace=True)
+        text_to_summarize = ' '.join(df_sample[:num_samples]['review_text'])
+        new_review = self.get_abstract_summary(text_to_summarize)
+        self.df_append.at[num, 'review_text'] = new_review
+        self.df_append.at[num, feature] = 1
 
     def get_feature_counts(self, df):
         """
@@ -116,6 +127,14 @@ class AbSumAugmentor(object):
             append_counts[feature] = count
 
         return append_counts
+
+
+def run_cpu_tasks_in_parallel(tasks):
+    running_tasks = [Process(target=task) for task in tasks]
+    for running_task in running_tasks:
+        running_task.start()
+    for running_task in running_tasks:
+        running_task.join()
 
 
 def main():
@@ -155,10 +174,18 @@ def main():
 
     parser.add_argument(
         "--threshold",
-        default=None,
+        default=3500,
         type=int,
         required=False,
         help="Maximum ceiling for each feature, normally the undersample max.",
+    )
+
+    parser.add_argument(
+        "--multiproc",
+        default=True,
+        type=bool,
+        required=False,
+        help="Whether to run abstract summarizations in multiprocessing mode to vasly reduce runtime.",
     )
 
     parser.add_argument(
@@ -212,7 +239,7 @@ def main():
 
     parser.add_argument(
         "--early_stopping",
-        default=4,
+        default=True,
         type=bool,
         required=False,
         help="bool if set to True beam search is stopped when at least num_beams sentences finished per batch. "
