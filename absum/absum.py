@@ -12,6 +12,7 @@ class AbSumAugmentor(object):
     def __init__(self, args):
         self.args = args
         self.features = args.features
+        self.append_index = 0
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         self.model = T5ForConditionalGeneration.from_pretrained(args.model)
         self.tokenizer = T5Tokenizer.from_pretrained(args.model)
@@ -25,8 +26,6 @@ class AbSumAugmentor(object):
         :return: Abstracted summary text
         """
         t5_prepared_text = "summarize: " + text
-        if self.args.debug:
-            print("original text preprocessed: \n", text)
 
         if self.device.type == 'cpu':
             tokenized_text = self.tokenizer.encode(
@@ -80,16 +79,20 @@ class AbSumAugmentor(object):
 
         for feature in self.features:
             num_to_append = counts[feature]
-            for num in range(0, num_to_append):
+            for num in range(self.append_index, self.append_index + num_to_append):
                 if multiproc:
                     tasks.append(self.process_abstract_summary(df, feature, num, num_samples))
                 else:
                     self.process_abstract_summary(df, feature, num, num_samples)
 
+            # Updating index for insertion into shared appended dataframe to preserve indexing
+            # in multiprocessing situation
+            self.append_index += num_to_append
+
         if multiproc:
             run_cpu_tasks_in_parallel(tasks)
 
-        return df.append(self.df_append)
+        return self.df_append #df.append(self.df_append)
 
     def process_abstract_summary(self, df, feature, num, num_samples):
         """
@@ -208,10 +211,10 @@ def main():
 
     parser.add_argument(
         "--debug",
-        default=False,
+        default=True,
         type=bool,
         required=False,
-        help="Whether to execute print statements to review concatenated and summary text.",
+        help="Whether to execute print statements to review summary texts.",
     )
 
     parser.add_argument(
@@ -227,7 +230,7 @@ def main():
         default='pt',
         type=str,
         required=False,
-        help="Can be set to ‘tf’, ‘pt’ or ‘np’ to return respectively TensorFlow tf.constant, PyTorch torch.Tensor "
+        help="Can be set to 'tf', 'pt' or 'np' to return respectively TensorFlow tf.constant, PyTorch torch.Tensor "
              "or Numpy :oj: np.ndarray instead of a list of python integers.",
     )
 
@@ -277,7 +280,7 @@ def main():
         default=True,
         type=bool,
         required=False,
-        help="Don’t decode special tokens (self.all_special_tokens). Default: False.",
+        help="Don't decode special tokens (self.all_special_tokens). Default: False.",
     )
 
     cl_args = parser.parse_args()
