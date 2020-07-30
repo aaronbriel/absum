@@ -54,11 +54,13 @@ class AbSumAugmentor(object):
 
     def abs_sum_augment(self, df, num_samples=100, multiproc=True):
         """
-        Gets append counts (number of rows to append) for each feature then samples a
-        subset of rows from main dataframe where that feature is exclusive. The subset is
-        then concatenated to form a single string and passed to an abstract summarizer to
-        generate a new data entry for the append count, augmenting said dataframe with rows
-        to essentially oversample underrepresented data.
+        Gets append counts (number of rows to append) for each feature and initializes main
+        classes' dataframe to be appended to that number of rows. Initializes all feature
+        values of said array to 0 to accommodate future one-hot encoding of features. Loops
+        over each feature then executes loop to number of rows needed to be appended for
+        oversampling to reach needed amount for given feature. If multiproc is set, calls
+        to process_abstract_summary are stored in a tasks array, which is then passed to a
+        function that allows multiprocessing of said summarizations to vastly reduce runtime.
         :param df: Main dataframe
         :param num_samples: Number of samples to pull
         :param multiproc: Whether to run in multiprocessing mode to greatly reduce runtime
@@ -78,20 +80,31 @@ class AbSumAugmentor(object):
 
         for feature in self.features:
             num_to_append = counts[feature]
-            # Pulling rows where only specified feature is set to 1
-            df_feature = df[(df[feature] == 1) & (df[self.args.features].sum(axis=1) == 1)]
             for num in range(0, num_to_append):
                 if multiproc:
-                    tasks.append(self.process_abstract_summary(df_feature, feature, num, num_samples))
+                    tasks.append(self.process_abstract_summary(df, feature, num, num_samples))
                 else:
-                    self.process_abstract_summary(df_feature, feature, num, num_samples)
+                    self.process_abstract_summary(df, feature, num, num_samples)
 
         if multiproc:
             run_cpu_tasks_in_parallel(tasks)
 
         return df.append(self.df_append)
 
-    def process_abstract_summary(self, df_feature, feature, num, num_samples):
+    def process_abstract_summary(self, df, feature, num, num_samples):
+        """
+        Samples a subset of rows from main dataframe where given feature is exclusive. The
+        subset is then concatenated to form a single string and passed to an abstract summarizer
+        to generate a new data entry for the append count, augmenting said dataframe with rows
+        to essentially oversample underrepresented data. df_append is set as a class variable to
+        accommodate that said dataframe may need to be shared among multiple processes.
+        :param df: Main dataframe containing text and features
+        :param feature: Feature to filter on
+        :param num: Count of place in abs_sum_augment loop
+        :param num_samples: Number of samples to pull from main dataframe
+        """
+        # Pulling rows where only specified feature is set to 1
+        df_feature = df[(df[feature] == 1) & (df[self.args.features].sum(axis=1) == 1)]
         df_sample = df_feature.sample(num_samples, replace=True)
         text_to_summarize = ' '.join(df_sample[:num_samples]['review_text'])
         new_review = self.get_abstract_summary(text_to_summarize)
@@ -130,6 +143,11 @@ class AbSumAugmentor(object):
 
 
 def run_cpu_tasks_in_parallel(tasks):
+    """
+    Takes array of tasks, loops over them to start each process, then loops over each
+    to join them
+    :param tasks: Array of tasks or function calls to start and join
+    """
     running_tasks = [Process(target=task) for task in tasks]
     for running_task in running_tasks:
         running_task.start()
