@@ -7,7 +7,7 @@ import torch
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 
 
-class DataAugmentor(object):
+class AbSumAugmentor(object):
     def __init__(self, args):
         self.args = args
         self.features = args.features
@@ -74,9 +74,8 @@ class DataAugmentor(object):
 
         for feature in self.features:
             num_to_append = counts[feature]
-            # Leveraging string representation of category for exclusivity
-            # df_feature = df[df[feature] == 1]
-            df_feature = df[df[CATEGORY] == feature]
+            # Pulling rows where only specified feature is set to 1
+            df_feature = df[(df[feature] == 1) & (df[self.args.features].sum(axis=1) == 1)]
             for num in range(0, num_to_append):
                 df_sample = df_feature.sample(num_samples, replace=True)
                 text_to_summarize = ' '.join(df_sample[:num_samples]['review_text'])
@@ -99,21 +98,20 @@ class DataAugmentor(object):
             shape_array[feature] = df[feature].sum()
         return shape_array
 
-    def get_append_counts(self, df, threshold=3500):
+    def get_append_counts(self, df):
         """
         Gets number of rows that need to be augmented for each feature up to threshold
         :param df: Dataframe with one hot encoded features to pull categories/features from
-        :param threshold: Maximum ceiling for each category, normally the undersample max
         :return: Dictionary containing number to append for each category
         """
         append_counts = {}
         feature_counts = self.get_feature_counts(df)
 
         for feature in self.features:
-            if feature_counts[feature] >= threshold:
+            if feature_counts[feature] >= self.args.threshold:
                 count = 0
             else:
-                count = threshold - feature_counts[feature]
+                count = self.args.threshold - feature_counts[feature]
 
             append_counts[feature] = count
 
@@ -153,6 +151,14 @@ def main():
         type=str,
         required=False,
         help="Comma separated string of features",
+    )
+
+    parser.add_argument(
+        "--threshold",
+        default=None,
+        type=int,
+        required=False,
+        help="Maximum ceiling for each feature, normally the undersample max.",
     )
 
     parser.add_argument(
@@ -209,7 +215,8 @@ def main():
         default=4,
         type=bool,
         required=False,
-        help="See https://huggingface.co/transformers/model_doc/t5.html#t5forconditionalgeneration",
+        help="bool if set to True beam search is stopped when at least num_beams sentences finished per batch. "
+             "Defaults to False as defined in configuration_utils.PretrainedConfig.",
     )
 
     parser.add_argument(
@@ -217,20 +224,19 @@ def main():
         default=True,
         type=bool,
         required=False,
-        help="See https://huggingface.co/transformers/model_doc/t5.html#t5forconditionalgeneration",
+        help="Don’t decode special tokens (self.all_special_tokens). Default: False.",
     )
 
     cl_args = parser.parse_args()
     args = Box(vars(cl_args))
 
     csv = cl_args.csv
+
     aug_csv = cl_args.aug_csv
     if not aug_csv:
         aug_csv = csv.replace('.csv', '-augmented.csv')
         args.aug_csv = aug_csv
 
-    # '/Users/aaronbriel/pinklion/ai/voc/data/google_pp_category.csv'
-    # 'ux_design,device_compatibility,feature_request,cost_and_payments,defect,performance,advertising,competitor,none'
     df_ = pd.read_csv(csv)
 
     # If features passed in, convert to list of strings. Otherwise assume all features aside from text are in play
@@ -240,11 +246,7 @@ def main():
         args.features = df_.columns.tolist()
         args.features.remove(args.text)
 
-    import pdb
-    pdb.set_trace()
-
-    augmentor = DataAugmentor(args)
-
+    augmentor = AbSumAugmentor(args)
     df_augmented = augmentor.abs_sum_augment(df_)
     df_augmented.to_csv(aug_csv)
 
