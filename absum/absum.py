@@ -92,7 +92,7 @@ class AbSumAugmentor(object):
         if multiproc:
             run_cpu_tasks_in_parallel(tasks)
 
-        return self.df_append #df.append(self.df_append)
+        return self.df_append
 
     def process_abstract_summary(self, df, feature, num, num_samples):
         """
