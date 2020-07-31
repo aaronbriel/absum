@@ -63,6 +63,7 @@ df_augmented.to_csv(csv.replace('.csv', '-augmented.csv'), encoding='utf-8', ind
 ```
 
 ##Parameters
+
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | df | (:class:`pandas.Dataframe`) | Dataframe containing text and one-hot encoded features.
