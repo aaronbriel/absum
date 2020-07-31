@@ -3,14 +3,14 @@ from setuptools import setup, find_packages
 
 HERE = pathlib.Path(__file__).parent
 
-VERSION = '0.1.4'
+VERSION = '0.1.5'
 PACKAGE_NAME = 'absum'
 AUTHOR = 'Aaron Briel'
 AUTHOR_EMAIL = 'aaronbriel@gmail.com'
 URL = 'https://github.com/aaronbriel/absum'
 
 LICENSE = 'Apache License 2.0'
-DESCRIPTION = 'Abstract Summarization for Data Augmentation'
+DESCRIPTION = 'Abstractive Summarization for Data Augmentation'
 LONG_DESCRIPTION = (HERE / "README.md").read_text()
 LONG_DESC_TYPE = "text/markdown"
 

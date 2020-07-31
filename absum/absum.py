@@ -22,7 +22,7 @@ from transformers import T5Tokenizer, T5ForConditionalGeneration
 
 class Augmentor(object):
     """
-    Uses Abstract Summarization for Data Augmentation to address multi-label class imbalance.
+    Uses Abstractive Summarization for Data Augmentation to address multi-label class imbalance.
     Parameters:
         df (:class:`pandas.Dataframe`): Dataframe containing text and one-hot encoded features.
         text_column (:obj:`string`, `optional`, defaults to "text"): Column in df containing text.
@@ -106,12 +106,12 @@ class Augmentor(object):
             self.features = self.df.columns.tolist()
             self.features.remove(self.text_column)
 
-    def get_abstract_summary(self, text):
+    def get_abstractive_summarization(self, text):
         """
-        Computes abstract summarization of specified text
+        Computes abstractive summarization of specified text
         :param text: Text to summarize
         :param debug: Whether to print
-        :return: Abstracted summary text
+        :return: Abstractive summarization text
         """
         t5_prepared_text = "summarize: " + text
 
@@ -146,7 +146,7 @@ class Augmentor(object):
         values of said array to 0 to accommodate future one-hot encoding of features. Loops
         over each feature then executes loop to number of rows needed to be appended for
         oversampling to reach needed amount for given feature. If multiproc is set, calls
-        to process_abstract_summary are stored in a tasks array, which is then passed to a
+        to process_abstractive_summarization are stored in a tasks array, which is then passed to a
         function that allows multiprocessing of said summarizations to vastly reduce runtime.
         :return: Dataframe appended with augmented samples to make underrepresented
         features match the count of the majority features.
@@ -166,9 +166,9 @@ class Augmentor(object):
             num_to_append = counts[feature]
             for num in range(self.append_index, self.append_index + num_to_append):
                 if self.multiproc:
-                    tasks.append(self.process_abstract_summary(feature, num))
+                    tasks.append(self.process_abstractive_summarization(feature, num))
                 else:
-                    self.process_abstract_summary(feature, num)
+                    self.process_abstractive_summarization(feature, num)
 
             # Updating index for insertion into shared appended dataframe to preserve indexing
             # in multiprocessing situation
@@ -179,10 +179,10 @@ class Augmentor(object):
 
         return self.df_append
 
-    def process_abstract_summary(self, feature, num):
+    def process_abstractive_summarization(self, feature, num):
         """
         Samples a subset of rows from main dataframe where given feature is exclusive. The
-        subset is then concatenated to form a single string and passed to an abstract summarizer
+        subset is then concatenated to form a single string and passed to an abstractive summarizer
         to generate a new data entry for the append count, augmenting said dataframe with rows
         to essentially oversample underrepresented data. df_append is set as a class variable to
         accommodate that said dataframe may need to be shared among multiple processes.
@@ -193,7 +193,7 @@ class Augmentor(object):
         df_feature = self.df[(self.df[feature] == 1) & (self.df[self.features].sum(axis=1) == 1)]
         df_sample = df_feature.sample(self.num_samples, replace=True)
         text_to_summarize = ' '.join(df_sample[:self.num_samples]['review_text'])
-        new_review = self.get_abstract_summary(text_to_summarize)
+        new_review = self.get_abstractive_summarization(text_to_summarize)
         self.df_append.at[num, 'review_text'] = new_review
         self.df_append.at[num, feature] = 1
 
