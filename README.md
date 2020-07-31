@@ -62,7 +62,7 @@ df_augmented = augmentor.abs_sum_augment()
 df_augmented.to_csv(csv.replace('.csv', '-augmented.csv'), encoding='utf-8', index=False)
 ```
 
-##Parameters
+## Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
