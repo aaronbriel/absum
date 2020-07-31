@@ -1,9 +1,9 @@
 # absum - Abstract Summarization for Data Augmentation
 
 ## Introduction
-Imbalanced datasets are a common problem in ML. Undersampling combined with oversampling are two methods of addressing this issue. 
+Imbalanced datasets are a common problem in ML, and undersampling combined with oversampling are two methods of addressing this issue. 
 A technique such as SMOTE can be effective in oversampling, although the problem becomes a bit more difficult with multilabel datasets. 
-MLSMOTE (Multi Label Synthetic Minority Oversampling Technique) has been proposed but the nature of text data and its large embeddings can sometimes make other forms of data augmentation more appealing.
+[MLSMOTE](https://www.sciencedirect.com/science/article/abs/pii/S0950705115002737) has been proposed, but the high dimensional nature of numerical vectors created from text can sometimes make other forms of data augmentation more appealing.
 
 absum is an NLP library that uses abstract summarization to perform data augmentation in order to oversample under-represented classes in datasets. Recent developments in abstract summarization make this approach optimal in achieving realistic data for the augmentation process.
 
