@@ -48,7 +48,7 @@ pip install git+https://github.com/aaronbriel/absum.git
 ## Usage
 
 absum expects a DataFrame containing a text column which defaults to 'text', and the remaining columns representing one-hot encoded features.
-If additional columns are present that you do not wish to be considered, you have the option to pass in specific one-hot encoded features as a comma-separated string to the 'features' parameter. All available parameters are detailed in the [Parameters](#Parameters) section below.
+If additional columns are present that you do not wish to be considered, you have the option to pass in specific one-hot encoded features as a comma-separated string to the 'features' parameter. All available parameters are detailed in the Parameters section below.
 
 ```bash
 import pandas as pd
