@@ -1,1 +1,1 @@
-from .absum import AbSumAugmentor
+from .absum import Augmentor
