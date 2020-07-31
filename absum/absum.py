@@ -20,7 +20,7 @@ import torch
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 
 
-class AbSumAugmentor(object):
+class Augmentor(object):
     """
     Uses Abstract Summarization for Data Augmentation to address multi-label class imbalance.
     Parameters:
@@ -245,7 +245,7 @@ def main():
     # Sample usage
     csv = 'path_to_csv'
     df = pd.read_csv(csv)
-    augmentor = AbSumAugmentor(df, text_column='text')
+    augmentor = Augmentor(df, text_column='text')
     df_augmented = augmentor.abs_sum_augment()
     df_augmented.to_csv(csv.replace('.csv', '-augmented.csv'), encoding='utf-8', index=False)
 
