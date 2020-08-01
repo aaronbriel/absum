@@ -62,6 +62,10 @@ df_augmented = augmentor.abs_sum_augment()
 df_augmented.to_csv(csv.replace('.csv', '-augmented.csv'), encoding='utf-8', index=False)
 ```
 
+When running you may see the following warning message which can be ignored: 
+"Token indices sequence length is longer than the specified maximum sequence length for this model (2987 > 512). 
+Running this sequence through the model will result in indexing errors". For more information refer to [this issue](https://github.com/huggingface/transformers/issues/1791).
+
 ## Parameters
 
 | Name | Type | Description |
