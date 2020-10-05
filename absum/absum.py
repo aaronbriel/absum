@@ -24,7 +24,7 @@ class Augmentor(object):
     """
     Uses Abstractive Summarization for Data Augmentation to address multi-label class imbalance.
     Parameters:
-        df (:class:`pandas.Dataframe`): Dataframe containing text and one-hot encoded features.
+        df (:class:`pandas.Dataframe`, `optional`, defaults to None): Dataframe containing text and one-hot encoded features.
         text_column (:obj:`string`, `optional`, defaults to "text"): Column in df containing text.
         features (:obj:`list`, `optional`, defaults to None): Features to possibly augment data for.
         device (:class:`torch.device`, `optional`, defaults to 'cuda' if available otherwise 'cpu'):
@@ -60,7 +60,7 @@ class Augmentor(object):
     """
     def __init__(
             self,
-            df,
+            df=None,
             text_column='text',
             features=None,
             device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'),
@@ -100,11 +100,12 @@ class Augmentor(object):
 
         # If features passed in, convert to list of strings. Otherwise assume all features
         # aside from text are in play
-        if self.features:
-            self.features = self.features.split(",")
-        else:
-            self.features = self.df.columns.tolist()
-            self.features.remove(self.text_column)
+        if df:
+            if self.features:
+                self.features = self.features.split(",")
+            else:
+                self.features = self.df.columns.tolist()
+                self.features.remove(self.text_column)
 
     def get_abstractive_summarization(self, text):
         """
