@@ -11,8 +11,10 @@ A technique such as SMOTE can be effective for oversampling, although the proble
 
 absum is an NLP library that uses abstractive summarization to perform data augmentation in order to oversample under-represented classes in datasets. Recent developments in abstractive summarization make this approach optimal in achieving realistic data for the augmentation process.
 
-It uses the latest [Huggingface T5](https://huggingface.co/transformers/model_doc/t5.html) model by default but is designed in a modular way to allow you to use any pre-trained or out-of-the-box Transformers models capable of abstractive summarization. 
+It uses the latest [Huggingface T5](https://huggingface.co/transformers/model_doc/t5.html) model by default, but is designed in a modular way to allow you to use any pre-trained or out-of-the-box Transformers models capable of abstractive summarization. 
 absum is format agnostic, expecting only a dataframe containing text and all features. It also uses multiprocessing to achieve optimal performance.
+
+Singular summarization calls are also possible. 
 
 ## Algorithm
 1. Append counts or the number of rows to add for each feature are first calculated with a ceiling threshold. Namely, if a given feature has 1000 rows and the ceiling is 100, its append count will be 0.
@@ -61,8 +63,14 @@ df_augmented = augmentor.abs_sum_augment()
 # Store resulting dataframe as a csv
 df_augmented.to_csv(csv.replace('.csv', '-augmented.csv'), encoding='utf-8', index=False)
 ```
-
-When running you may see the following warning message which can be ignored: 
+Running singular summarization on any chunk of text is simple:
+```
+text = chunk_of_text_to_summarize
+augmentor = Augmentor(min_length=100, max_length=200)
+output = augmentor.get_abstractive_summarization(text)
+```
+NOTE:
+When running any summarizations you may see the following warning message which can be ignored: 
 "Token indices sequence length is longer than the specified maximum sequence length for this model (2987 > 512). 
 Running this sequence through the model will result in indexing errors". For more information refer to [this issue](https://github.com/huggingface/transformers/issues/1791).
 
@@ -70,7 +78,7 @@ Running this sequence through the model will result in indexing errors". For mor
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| df | (:class:`pandas.Dataframe`) | Dataframe containing text and one-hot encoded features.
+| df | (:class:`pandas.Dataframe`, `optional`, defaults to None) | Dataframe containing text and one-hot encoded features.
 | text_column | (:obj:`string`, `optional`, defaults to "text") | Column in df containing text.
 | features | (:obj:`string`, `optional`, defaults to None) | Comma-separated string of features to possibly augment data for.
 | device | (:class:`torch.device`, `optional`, 'cuda' or 'cpu') | Torch device to run on cuda if available otherwise cpu.
