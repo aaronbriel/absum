@@ -60,7 +60,7 @@ class Augmentor(object):
     """
     def __init__(
             self,
-            df=None,
+            df=pd.DataFrame(),
             text_column='text',
             features=None,
             device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'),
@@ -100,7 +100,7 @@ class Augmentor(object):
 
         # If features passed in, convert to list of strings. Otherwise assume all features
         # aside from text are in play
-        if df:
+        if len(df) > 0:
             if self.features:
                 self.features = self.features.split(",")
             else:
