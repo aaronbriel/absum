@@ -193,9 +193,9 @@ class Augmentor(object):
         # Pulling rows where only specified feature is set to 1
         df_feature = self.df[(self.df[feature] == 1) & (self.df[self.features].sum(axis=1) == 1)]
         df_sample = df_feature.sample(self.num_samples, replace=True)
-        text_to_summarize = ' '.join(df_sample[:self.num_samples]['review_text'])
+        text_to_summarize = ' '.join(df_sample[:self.num_samples][self.text_column])
         new_review = self.get_abstractive_summarization(text_to_summarize)
-        self.df_append.at[num, 'review_text'] = new_review
+        self.df_append.at[num, self.text_column] = new_review
         self.df_append.at[num, feature] = 1
 
     def get_feature_counts(self, df):
